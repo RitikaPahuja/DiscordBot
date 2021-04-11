@@ -1,0 +1,73 @@
+import discord
+import os
+import subprocess
+import sys
+import operator
+from replit import db
+from keep_alive import keep_alive
+
+def install(package):
+    subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+
+
+try:
+  from googlesearch import search
+except ImportError:
+  install('google')
+
+
+
+client = discord.Client()
+
+@client.event
+async def on_ready():
+    print('We have logged in as {0.user}'.format(client))
+
+@client.event
+async def on_message(message):
+    # if message.author == client.user:
+    #     return
+
+    if message.content.startswith('hi'):
+        await message.channel.send('hey')
+    
+    if message.content.startswith('!google'):
+      msg = message.content
+      search_key = msg.split(" ",1)[1]
+      author = message.author
+      author = str(author)
+      if author in db.keys():
+        db[author].append(search_key)
+      else:
+        db[author] = [search_key]
+
+      
+      res = []
+      for j in search(search_key, tld="com", num=5 ,stop=5, pause=2):
+        await message.channel.send(str(j))
+        res.append(j)
+      
+      
+    
+    if message.content.startswith('!recent'):
+      msg = message.content
+      search_key = msg.split(" ",1)[1]
+      author = message.author
+      author = str(author)
+      if author in db.keys():
+        res = []
+        user_search = db[author]
+        for i in range(len(user_search)):
+          if operator.contains(user_search[i],search_key):
+            await message.channel.send(str(user_search[i]))
+            res.append(user_search[i])
+        if len(res) == 0:
+          res = "No search history"
+          await message.channel.send(str(res))
+   
+      else:
+        res = "No search history"
+        await message.channel.send(str(res))
+        
+keep_alive   
+client.run(os.getenv('TOKEN'))
